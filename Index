@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verpflegungsrechner — Rad Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --bg-card:#131313;
+    --bg-card-2:#181818;
+    --line:#2a2a26;
+    --text:#f3f3ee;
+    --text-muted:#8c8c85;
+    --lime:#d4ff3d;
+    --cyan:#3dd6ff;
+    --amber:#ffb23d;
+    --lime-dim:#3a4210;
+    --cyan-dim:#0f2e38;
+    --amber-dim:#3a2a0f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:80px;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:28px 20px 0;}
+
+  /* HERO */
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.18em;
+    color:var(--lime);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Anton',sans-serif;
+    font-weight:400;
+    font-size:44px;
+    line-height:0.95;
+    letter-spacing:.01em;
+    margin:0 0 6px;
+    text-transform:uppercase;
+  }
+  .sub{
+    color:var(--text-muted);
+    font-size:15px;
+    line-height:1.5;
+    max-width:52ch;
+    margin-bottom:28px;
+  }
+
+  section{margin-bottom:26px;}
+  .label-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:12px;
+  }
+  .field-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .field-value{
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    color:var(--lime);
+    font-weight:700;
+  }
+
+  /* Duration slider */
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:6px;
+    border-radius:3px;
+    background:var(--line);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:22px;height:22px;
+    border-radius:50%;
+    background:var(--lime);
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--lime);
+    cursor:pointer;
+    margin-top:-8px;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:3px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--lime);border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--lime);cursor:pointer;
+  }
+  input[type=range].cyan::-webkit-slider-thumb{background:var(--cyan);box-shadow:0 0 0 1px var(--cyan);}
+  input[type=range].cyan::-moz-range-thumb{background:var(--cyan);box-shadow:0 0 0 1px var(--cyan);}
+  .field-value.cyan-text{color:var(--cyan);}
+
+  /* Intensity cards */
+  .intensity-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+  }
+  .int-card{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 8px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .int-card .ic-name{
+    font-family:'Anton',sans-serif;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    margin-bottom:4px;
+  }
+  .int-card .ic-range{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-muted);
+  }
+  .int-card.active{
+    border-color:var(--lime);
+    background:var(--lime-dim);
+  }
+  .int-card.active .ic-range{color:var(--lime);}
+
+  /* Hitze toggle */
+  .toggle-row{
+    display:flex;align-items:center;gap:10px;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .toggle-row .tt{flex:1;}
+  .toggle-row .tt-title{font-size:14px;font-weight:600;}
+  .toggle-row .tt-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .switch{
+    width:44px;height:26px;border-radius:13px;
+    background:var(--line);position:relative;cursor:pointer;
+    flex-shrink:0;
+    transition:background .15s;
+  }
+  .switch::after{
+    content:'';position:absolute;top:3px;left:3px;
+    width:20px;height:20px;border-radius:50%;
+    background:var(--text-muted);
+    transition:transform .15s, background .15s;
+  }
+  .switch.on{background:var(--amber-dim);}
+  .switch.on::after{transform:translateX(18px);background:var(--amber);}
+
+  /* Results hero numbers */
+  .results{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .result-card{
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px;
+  }
+  .result-card .rc-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .result-card .rc-value{
+    font-family:'Anton',sans-serif;
+    font-size:34px;
+    line-height:1;
+  }
+  .result-card.carbs .rc-value{color:var(--lime);}
+  .result-card.fluid .rc-value{color:var(--cyan);}
+  .result-card .rc-unit{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    color:var(--text-muted);
+    margin-left:4px;
+  }
+  .result-card .rc-detail{
+    margin-top:8px;
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+
+  /* Timeline / signature element */
+  .timeline-title{
+    font-family:'Anton',sans-serif;
+    text-transform:uppercase;
+    font-size:16px;
+    margin-bottom:4px;
+  }
+  .timeline-sub{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:16px;
+  }
+  .timeline{
+    position:relative;
+    height:64px;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin-bottom:8px;
+    overflow:hidden;
+  }
+  .tl-track{
+    position:absolute;
+    left:0;right:0;top:50%;
+    height:2px;
+    background:var(--line);
+    transform:translateY(-50%);
+  }
+  .tl-mark{
+    position:absolute;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:10px;height:10px;
+    border-radius:50%;
+    border:2px solid var(--bg-card);
+  }
+  .tl-mark.drink{background:var(--cyan);top:calc(50% - 12px);}
+  .tl-mark.eat{background:var(--lime);top:calc(50% + 12px);}
+  .tl-start,.tl-end{
+    position:absolute;bottom:4px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--text-muted);
+  }
+  .tl-start{left:8px;}
+  .tl-end{right:8px;}
+  .legend{
+    display:flex;gap:16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-muted);
+    margin-bottom:24px;
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.cyan{background:var(--cyan);}
+  .dot.lime{background:var(--lime);}
+
+  /* Packing list */
+  .pack-title{
+    font-family:'Anton',sans-serif;
+    text-transform:uppercase;
+    font-size:16px;
+    margin-bottom:4px;
+  }
+  .pack-sub{font-size:12px;color:var(--text-muted);margin-bottom:14px;}
+  .pack-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .pack-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--bg-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .pack-item .pi-name{font-size:14px;font-weight:600;}
+  .pack-item .pi-sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .pack-item .pi-qty{
+    font-family:'JetBrains Mono',monospace;
+    font-size:20px;
+    font-weight:700;
+    color:var(--amber);
+    white-space:nowrap;
+    margin-left:12px;
+  }
+
+  .note{
+    display:flex;gap:10px;
+    background:var(--bg-card-2);
+    border:1px solid var(--line);
+    border-left:3px solid var(--lime);
+    border-radius:8px;
+    padding:14px;
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.5;
+    margin-top:28px;
+  }
+  .note b{color:var(--text);}
+
+  footer{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    color:#4a4a45;
+    text-transform:uppercase;
+    margin-top:32px;
+  }
+
+  @media (max-width:380px){
+    h1{font-size:36px;}
+    .results{grid-template-columns:1fr;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Rad Coach // Verpflegung</div>
+  <h1>Was nimmst du mit?</h1>
+  <p class="sub">Dauer und Intensität eingeben — der Rechner sagt dir, wie viele Carbs, wie viel Flüssigkeit und in welchem Rhythmus du sie brauchst.</p>
+
+  <section>
+    <div class="label-row">
+      <span class="field-label">Dauer der Einheit</span>
+      <span class="field-value" id="durVal">1,5 Std</span>
+    </div>
+    <input type="range" id="duration" min="20" max="360" step="5" value="90">
+  </section>
+
+  <section>
+    <div class="label-row">
+      <span class="field-label">Belastung</span>
+    </div>
+    <div class="intensity-grid" id="intensityGrid">
+      <div class="int-card" data-min="30" data-max="40" data-name="Zone 2 / Locker">
+        <div class="ic-name">Zone 2</div>
+        <div class="ic-range">30–40 g/h</div>
+      </div>
+      <div class="int-card active" data-min="60" data-max="80" data-name="Sweetspot / Race Pace">
+        <div class="ic-name">Sweetspot</div>
+        <div class="ic-range">60–80 g/h</div>
+      </div>
+      <div class="int-card" data-min="90" data-max="120" data-name="Intervalle / Wettkampf">
+        <div class="ic-name">Intervalle</div>
+        <div class="ic-range">90–120 g/h</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label-row">
+      <span class="field-label">Carbs pro Stunde</span>
+      <span class="field-value" id="carbRateVal">70 g/h</span>
+    </div>
+    <input type="range" id="carbRate" min="30" max="120" step="5" value="70">
+  </section>
+
+  <section>
+    <div class="label-row">
+      <span class="field-label">Trinkmenge pro Stunde</span>
+      <span class="field-value cyan-text" id="fluidRateVal">600 ml/h</span>
+    </div>
+    <input type="range" class="cyan" id="fluidRate" min="300" max="1000" step="50" value="600">
+  </section>
+
+  <section>
+    <div class="toggle-row">
+      <div class="tt">
+        <div class="tt-title">Hitze / hohe Schweißrate</div>
+        <div class="tt-sub">Erhöht die Trinkmenge um ca. 20%</div>
+      </div>
+      <div class="switch" id="heatToggle"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="results">
+      <div class="result-card carbs">
+        <div class="rc-label">Gesamt Carbs</div>
+        <div class="rc-value" id="totalCarbs">105<span class="rc-unit">g</span></div>
+        <div class="rc-detail" id="carbDetail">Verteilt über die Einheit</div>
+      </div>
+      <div class="result-card fluid">
+        <div class="rc-label">Gesamt Flüssigkeit</div>
+        <div class="rc-value" id="totalFluid">900<span class="rc-unit">ml</span></div>
+        <div class="rc-detail" id="fluidDetail">Verteilt über die Einheit</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="timeline-title">Dein Rhythmus</div>
+    <div class="timeline-sub">Trinken alle 15–20 Min. · Essen alle 20–30 Min. · kleine Mengen, nicht auf einmal</div>
+    <div class="timeline" id="timeline">
+      <div class="tl-track"></div>
+      <div class="tl-start">0:00</div>
+      <div class="tl-end" id="tlEnd">1:30</div>
+    </div>
+    <div class="legend">
+      <span><i class="dot cyan"></i>Trinken (<span id="drinkAmt">120 ml</span>)</span>
+      <span><i class="dot lime"></i>Essen (<span id="eatAmt">26 g</span>)</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="pack-title">Packliste</div>
+    <div class="pack-sub">Ein Vorschlag — mische frei nach Geschmack, Hauptsache die Gesamtmenge stimmt.</div>
+    <div class="pack-list" id="packList"></div>
+  </section>
+
+  <div class="note">
+    <div><b>Merke:</b> Plane immer für die gesamte Dauer, nicht nur für einen Teil der Einheit. Kleine Mengen, regelmäßig, gleichmäßig verteilt — so bleibt der Blutzucker stabil.</div>
+  </div>
+
+  <footer>Rad Coach · Verpflegungsrechner</footer>
+</div>
+
+<script>
+const durationEl = document.getElementById('duration');
+const carbRateEl = document.getElementById('carbRate');
+const fluidRateEl = document.getElementById('fluidRate');
+const heatToggle = document.getElementById('heatToggle');
+const intensityCards = document.querySelectorAll('.int-card');
+
+let heatOn = false;
+
+function fmtDuration(min){
+  const h = Math.floor(min/60);
+  const m = min%60;
+  if(h===0) return m + ' Min';
+  if(m===0) return h + ' Std';
+  return h + ',' + Math.round(m/60*10) + ' Std';
+}
+function fmtClock(min){
+  const h = Math.floor(min/60);
+  const m = Math.round(min%60);
+  return h + ':' + String(m).padStart(2,'0');
+}
+
+function render(){
+  const duration = parseInt(durationEl.value); // minutes
+  const carbRate = parseInt(carbRateEl.value); // g/h
+  let fluidRate = parseInt(fluidRateEl.value); // ml/h
+  if(heatOn) fluidRate = Math.round(fluidRate*1.2/10)*10;
+
+  document.getElementById('durVal').textContent = fmtDuration(duration);
+  document.getElementById('carbRateVal').textContent = carbRate + ' g/h';
+  document.getElementById('fluidRateVal').textContent = fluidRate + ' ml/h' + (heatOn ? ' *' : '');
+
+  const hours = duration/60;
+  const totalCarbs = Math.round(hours*carbRate/5)*5;
+  const totalFluid = Math.round(hours*fluidRate/50)*50;
+
+  document.getElementById('totalCarbs').innerHTML = totalCarbs + '<span class="rc-unit">g</span>';
+  document.getElementById('totalFluid').innerHTML = totalFluid + '<span class="rc-unit">ml</span>';
+
+  // intervals: drink every 17.5 min, eat every 25 min
+  const drinkInterval = 17.5;
+  const eatInterval = 25;
+  const drinkCount = Math.max(1, Math.floor(duration/drinkInterval));
+  const eatCount = Math.max(1, Math.floor(duration/eatInterval));
+  const drinkAmt = Math.round(totalFluid/drinkCount/10)*10;
+  const eatAmt = Math.round(totalCarbs/eatCount);
+
+  document.getElementById('carbDetail').textContent = eatCount + '× ca. ' + eatAmt + ' g, alle 20–30 Min.';
+  document.getElementById('fluidDetail').textContent = drinkCount + '× ca. ' + drinkAmt + ' ml, alle 15–20 Min.';
+  document.getElementById('drinkAmt').textContent = drinkAmt + ' ml';
+  document.getElementById('eatAmt').textContent = eatAmt + ' g';
+  document.getElementById('tlEnd').textContent = fmtClock(duration);
+
+  // timeline marks
+  const tl = document.getElementById('timeline');
+  tl.querySelectorAll('.tl-mark').forEach(n=>n.remove());
+  for(let t=drinkInterval; t<=duration+0.01; t+=drinkInterval){
+    const m = document.createElement('div');
+    m.className = 'tl-mark drink';
+    m.style.left = (t/duration*100)+'%';
+    tl.appendChild(m);
+  }
+  for(let t=eatInterval; t<=duration+0.01; t+=eatInterval){
+    const m = document.createElement('div');
+    m.className = 'tl-mark eat';
+    m.style.left = (t/duration*100)+'%';
+    tl.appendChild(m);
+  }
+
+  // packing list
+  const packList = document.getElementById('packList');
+  packList.innerHTML = '';
+  const items = [
+    {name:'Gels', per:25, sub:'~25 g Carbs / Stück'},
+    {name:'Riegel', per:30, sub:'~30 g Carbs / Stück'},
+    {name:'Bananen', per:27, sub:'~27 g Carbs / Stück'},
+  ];
+  items.forEach(it=>{
+    const qty = Math.max(1, Math.ceil(totalCarbs/it.per));
+    const row = document.createElement('div');
+    row.className = 'pack-item';
+    row.innerHTML = `<div><div class="pi-name">${it.name}</div><div class="pi-sub">${it.sub} — oder mische mit anderen Quellen</div></div><div class="pi-qty">${qty}×</div>`;
+    packList.appendChild(row);
+  });
+  const bottleSize = 500;
+  const bottles = Math.max(1, Math.ceil(totalFluid/bottleSize));
+  const bottleRow = document.createElement('div');
+  bottleRow.className = 'pack-item';
+  bottleRow.innerHTML = `<div><div class="pi-name">Trinkflaschen</div><div class="pi-sub">à ${bottleSize} ml — ggf. mit Elektrolyten</div></div><div class="pi-qty">${bottles}×</div>`;
+  packList.appendChild(bottleRow);
+}
+
+durationEl.addEventListener('input', render);
+carbRateEl.addEventListener('input', render);
+fluidRateEl.addEventListener('input', render);
+
+intensityCards.forEach(card=>{
+  card.addEventListener('click', ()=>{
+    intensityCards.forEach(c=>c.classList.remove('active'));
+    card.classList.add('active');
+    const mid = Math.round((parseInt(card.dataset.min)+parseInt(card.dataset.max))/2/5)*5;
+    carbRateEl.value = mid;
+    render();
+  });
+});
+
+heatToggle.addEventListener('click', ()=>{
+  heatOn = !heatOn;
+  heatToggle.classList.toggle('on', heatOn);
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
